@@ -145,6 +145,7 @@ class _Window:
             raise RuntimeError('Please enter a valid destination folder.')
         downloader = antenati.AntenatiDownloader(url, 0, None)
         downloader.check_dir(path_value, False)
+        downloader.save_gallery_info()
         with ThreadPoolExecutor(max_workers=1) as exc, self.__progress_bar_setter() as pb, self.__in_progress(), self.__wait_flag() as flag:
             def cmd():
                 with flag.set_at_exit():

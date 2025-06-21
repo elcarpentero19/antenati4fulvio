@@ -27,6 +27,7 @@ from click import echo, confirm
 from slugify import slugify
 from humanize import naturalsize
 from tqdm import tqdm
+import csv
 
 
 @dataclass
@@ -141,6 +142,22 @@ class AntenatiDownloader:
             print(f'{label:<25}{value}')
         print(f'{self.gallery_length} images found.')
 
+    def save_gallery_info(self) -> None:
+        """Save some IIIF gallery info into a file info.csv"""
+        mydict= {
+                    'url': self.url,
+                    'subtitles': self.__get_metadata_content('Titolo'),
+                    'category': self.__get_metadata_content('Tipologia'),
+                    'director': self.__get_metadata_content('Datazione'),
+                    'comments': self.__get_metadata_content('Contesto archivistico'),
+                    'actors': self.__get_metadata_content('Conservato da')
+                }
+
+        with open('info.csv', 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile, delimiter=';')
+            writer.writerow(mydict.keys())
+            writer.writerow(mydict.values())
+
     def check_dir(self, dirname: Optional[str] = None, interactive = True) -> None:
         """Check if directory already exists and chdir to it"""
         if dirname is not None:
@@ -235,6 +252,9 @@ def main() -> None:
 
     # Check if directory already exists and chdir to it
     downloader.check_dir()
+
+    # Save gallery info
+    downloader.save_gallery_info()
 
     # Run
     gallery_size = downloader.run_cli(args.nthreads, args.nconn)
