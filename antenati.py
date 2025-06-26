@@ -262,7 +262,7 @@ def main() -> None:
 
     AntenatiDownloader.save_csv_file(
         filename = 'info.csv',
-        header = list(downloader.gallery_info().keys()) + ['mediatype','page_url'],
+        header = list(downloader.gallery_info().keys()) + ['mediatype','Languages'],
         body = [p1 + p2 for p2 in body2]
     )
 
