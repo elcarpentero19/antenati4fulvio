@@ -51,7 +51,7 @@ class AntenatiDownloader:
     dirname: Path
     gallery_length: int
 
-    def __init__(self, url: str, first: int, last: int):
+    def __init__(self, url: str, first: int, last: int|None):
         self.url = url
         self.archive_id = self.__get_archive_id()
         self.manifest = self.__get_iiif_manifest()
@@ -142,9 +142,9 @@ class AntenatiDownloader:
             print(f'{label:<25}{value}')
         print(f'{self.gallery_length} images found.')
 
-    def save_gallery_info(self) -> None:
-        """Save some IIIF gallery info into a file info.csv"""
-        mydict= {
+    def gallery_info(self) -> dict:
+        """Return a dictionary of IIIF gallery info"""
+        return {
                     'url': self.url,
                     'subtitles': self.__get_metadata_content('Titolo'),
                     'category': self.__get_metadata_content('Tipologia'),
@@ -152,11 +152,6 @@ class AntenatiDownloader:
                     'comments': self.__get_metadata_content('Contesto archivistico'),
                     'actors': self.__get_metadata_content('Conservato da')
                 }
-
-        with open('info.csv', 'w', newline='', encoding='utf-8') as csvfile:
-            writer = csv.writer(csvfile, delimiter=';')
-            writer.writerow(mydict.keys())
-            writer.writerow(mydict.values())
 
     def check_dir(self, dirname: Optional[str] = None, interactive = True) -> None:
         """Check if directory already exists and chdir to it"""
@@ -225,7 +220,15 @@ class AntenatiDownloader:
                 size = future.result()
                 gallery_size += size
             return gallery_size
-
+        
+    @staticmethod
+    def save_csv_file(filename: str, header: list, body: list[list]) -> None:
+        """Save a csv file with info about gallery and pages"""
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile, delimiter=';')
+            writer.writerow(header)
+            for r in body:
+                writer.writerow(r)
 
 def main() -> None:
     """Main"""
@@ -253,14 +256,22 @@ def main() -> None:
     # Check if directory already exists and chdir to it
     downloader.check_dir()
 
-    # Save gallery info
-    downloader.save_gallery_info()
+    # Save a csv file w/ info about the gallery and every downloaded page
+    p1 = list(downloader.gallery_info().values())
+    body2 = [[slugify(x['label']), x['images'][0]['resource']['@id']] for x in downloader.canvases]
+
+    AntenatiDownloader.save_csv_file(
+        filename = 'info.csv',
+        header = list(downloader.gallery_info().keys()) + ['mediatype','page_url'],
+        body = [p1 + p2 for p2 in body2]
+    )
 
     # Run
     gallery_size = downloader.run_cli(args.nthreads, args.nconn)
 
     # Print summary
     print(f'Done. Total size: {naturalsize(gallery_size)}')
+
 
 
 if __name__ == '__main__':

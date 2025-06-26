@@ -18,6 +18,7 @@ import tkinter.ttk as ttk
 from webbrowser import open as webopen
 
 from humanize import naturalsize
+from slugify import slugify
 
 import antenati
 
@@ -145,7 +146,17 @@ class _Window:
             raise RuntimeError('Please enter a valid destination folder.')
         downloader = antenati.AntenatiDownloader(url, 0, None)
         downloader.check_dir(path_value, False)
-        downloader.save_gallery_info()
+
+        # Save a csv file w/ info about the gallery and every downloaded page
+        p1 = list(downloader.gallery_info().values())
+        body2 = [[slugify(x['label']), x['images'][0]['resource']['@id']] for x in downloader.canvases]
+
+        antenati.AntenatiDownloader.save_csv_file(
+            filename = 'info.csv',
+            header = list(downloader.gallery_info().keys()) + ['mediatype','Languages'],
+            body = [p1 + p2 for p2 in body2]
+        )
+
         with ThreadPoolExecutor(max_workers=1) as exc, self.__progress_bar_setter() as pb, self.__in_progress(), self.__wait_flag() as flag:
             def cmd():
                 with flag.set_at_exit():
